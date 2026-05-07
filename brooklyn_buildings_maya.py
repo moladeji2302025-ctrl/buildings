@@ -25,7 +25,7 @@ def safe_poly_fallback(op_names, *args, op_label="poly operation", **kwargs):
 
 
 def safe_merge_vertices(*args, **kwargs):
-    """Merge vertices using Maya 2026+ name first, then older alias."""
+    """Merge vertices using the preferred command name, then its alternate alias."""
     return safe_poly_fallback(("polyMergeVertex", "polyMergeVertices"), *args, op_label="vertex merge", **kwargs)
 
 
