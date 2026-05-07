@@ -20,7 +20,7 @@ def safe_poly_fallback(op_names, *args, op_label="poly operation", **kwargs):
     for op_name in op_names:
         if hasattr(cmds, op_name):
             return safe_poly(op_name, *args, **kwargs)
-    print("Warning: no compatible Maya poly command found for {0}. Tried: {1}".format(op_label, ", ".join(op_names)))
+    print(f"Warning: no compatible Maya poly command found for {op_label}. Tried: {', '.join(op_names)}")
     return None
 
 
