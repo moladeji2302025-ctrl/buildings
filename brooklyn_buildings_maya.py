@@ -11,7 +11,7 @@ def safe_poly(op_name, *args, **kwargs):
     try:
         return getattr(cmds, op_name)(*args, **kwargs)
     except Exception as err:  # pragma: no cover - Maya runtime only
-        print("warning: {0} failed: {1}".format(op_name, err))
+        print("Warning: {0} failed: {1}".format(op_name, err))
         return None
 
 
@@ -425,13 +425,14 @@ def create_neogrec_building(x_offset):
         assign_material(ct, trim_sg)
 
     # style detail: frieze with triglyph-like notches every 0.5m
-    notch_count = int((width + 1.0) / 0.5)
+    triglyph_spacing = 0.5
+    notch_count = int((width + 1.0) / triglyph_spacing)
     for i in range(notch_count):
         notch = safe_poly("polyCube", n="b04_triglyph_notch_{0}".format(i + 1), w=0.12, h=0.25, d=0.2)
         if notch:
             nt = notch[0]
             cmds.parent(nt, grp)
-            cmds.move(x_offset - width * 0.5 + 0.2 + i * 0.5, height - 0.25, depth * 0.5 + 0.95, nt, absolute=True)
+            cmds.move(x_offset - width * 0.5 + 0.2 + i * triglyph_spacing, height - 0.25, depth * 0.5 + 0.95, nt, absolute=True)
             assign_material(nt, roof_sg)
 
     # style detail: fluted entrance columns using 8-sided cylinders and vertical cuts
