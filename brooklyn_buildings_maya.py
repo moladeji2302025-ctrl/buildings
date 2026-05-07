@@ -16,13 +16,14 @@ def safe_poly(op_name, *args, **kwargs):
 
 
 def safe_merge_vertices(*args, **kwargs):
+    """Try both merge-vertex command names across Maya versions."""
     result = safe_poly("polyMergeVertices", *args, **kwargs)
     if result is not None:
         return result
     return safe_poly("polyMergeVertex", *args, **kwargs)
 
 
-def ensure_layer(name, renderable=True):
+def ensure_layer(name):
     if not cmds.objExists(name):
         cmds.createDisplayLayer(name=name, empty=True)
     if cmds.attributeQuery("visibility", node=name, exists=True):
@@ -405,7 +406,7 @@ def create_neogrec_building(x_offset):
     width, depth, height = 15.0, 11.0, 14.5
 
     stone_sg = make_lambert("b04_stone", (0.52, 0.47, 0.39))
-    trim_sg = make_lambert("b04_trim", (0.30, 0.26, 0.2))
+    trim_sg = make_lambert("b04_trim", (0.30, 0.26, 0.20))
     roof_sg = make_lambert("b04_roof", (0.16, 0.16, 0.18))
     glass_sg = make_lambert("b04_glass", (0.25, 0.33, 0.42))
 
@@ -426,7 +427,8 @@ def create_neogrec_building(x_offset):
 
     # style detail: frieze with triglyph-like notches every 0.5m
     triglyph_spacing = 0.5
-    notch_count = int((width + 1.0) / triglyph_spacing)
+    frieze_padding = 1.0
+    notch_count = int((width + frieze_padding) / triglyph_spacing)
     for i in range(notch_count):
         notch = safe_poly("polyCube", n="b04_triglyph_notch_{0}".format(i + 1), w=0.12, h=0.25, d=0.2)
         if notch:
@@ -639,8 +641,8 @@ def create_environment():
 
 
 def main():
-    ensure_layer("lgt_buildings", renderable=True)
-    ensure_layer("lgt_collision", renderable=True)
+    ensure_layer("lgt_buildings")
+    ensure_layer("lgt_collision")
 
     builders = [
         create_classic_building,
