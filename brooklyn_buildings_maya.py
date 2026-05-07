@@ -15,23 +15,23 @@ def safe_poly(op_name, *args, **kwargs):
         return None
 
 
-def safe_poly_fallback(op_names, *args, **kwargs):
+def safe_poly_fallback(op_names, *args, op_label="poly operation", **kwargs):
     """Run the first available poly command name from a compatibility list."""
     for op_name in op_names:
         if hasattr(cmds, op_name):
             return safe_poly(op_name, *args, **kwargs)
-    print("Warning: no compatible Maya poly command found for operation. Tried: {0}".format(", ".join(op_names)))
+    print("Warning: no compatible Maya poly command found for {0}. Tried: {1}".format(op_label, ", ".join(op_names)))
     return None
 
 
 def safe_merge_vertices(*args, **kwargs):
     """Merge vertices using Maya 2026+ name first, then older alias."""
-    return safe_poly_fallback(("polyMergeVertex", "polyMergeVertices"), *args, **kwargs)
+    return safe_poly_fallback(("polyMergeVertex", "polyMergeVertices"), *args, op_label="vertex merge", **kwargs)
 
 
 def safe_extrude(*args, **kwargs):
     """Extrude faces using Maya 2026+ name, then older face/legacy aliases."""
-    return safe_poly_fallback(("polyExtrudeFace", "polyExtrudeFacet", "polyExtrude"), *args, **kwargs)
+    return safe_poly_fallback(("polyExtrudeFace", "polyExtrudeFacet", "polyExtrude"), *args, op_label="face extrude", **kwargs)
 
 
 def ensure_layer(name):
