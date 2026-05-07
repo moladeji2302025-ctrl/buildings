@@ -25,12 +25,12 @@ def safe_poly_fallback(op_names, *args, **kwargs):
 
 
 def safe_merge_vertices(*args, **kwargs):
-    """Try both merge-vertex command names across Maya versions."""
+    """Merge vertices using Maya 2026+ name first, then older alias."""
     return safe_poly_fallback(("polyMergeVertex", "polyMergeVertices"), *args, **kwargs)
 
 
 def safe_extrude(*args, **kwargs):
-    """Try face-extrude command names across Maya versions."""
+    """Extrude faces using Maya 2026+ name, then older face/legacy aliases."""
     return safe_poly_fallback(("polyExtrudeFace", "polyExtrudeFacet", "polyExtrude"), *args, **kwargs)
 
 
