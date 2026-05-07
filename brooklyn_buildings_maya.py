@@ -15,12 +15,22 @@ def safe_poly(op_name, *args, **kwargs):
         return None
 
 
+def safe_poly_fallback(op_names, *args, **kwargs):
+    """Run the first available poly command name from a compatibility list."""
+    for op_name in op_names:
+        if hasattr(cmds, op_name):
+            return safe_poly(op_name, *args, **kwargs)
+    return safe_poly(op_names[0], *args, **kwargs)
+
+
 def safe_merge_vertices(*args, **kwargs):
     """Try both merge-vertex command names across Maya versions."""
-    result = safe_poly("polyMergeVertices", *args, **kwargs)
-    if result is not None:
-        return result
-    return safe_poly("polyMergeVertex", *args, **kwargs)
+    return safe_poly_fallback(("polyMergeVertex", "polyMergeVertices"), *args, **kwargs)
+
+
+def safe_extrude(*args, **kwargs):
+    """Try face-extrude command names across Maya versions."""
+    return safe_poly_fallback(("polyExtrudeFace", "polyExtrudeFacet", "polyExtrude"), *args, **kwargs)
 
 
 def ensure_layer(name):
@@ -289,7 +299,7 @@ def create_italianate_building(x_offset):
         cmds.parent(rt, grp)
         cmds.move(x_offset, height + 0.2, 0, rt, absolute=True)
         assign_material(rt, roof_sg)
-        safe_poly("polyExtrude", rt + ".f[1]", ltz=0.2)
+        safe_extrude(rt + ".f[1]", ltz=0.2)
 
     return grp
 
@@ -385,7 +395,7 @@ def create_romanesque_building(x_offset):
         rt = roof[0]
         cmds.parent(rt, grp)
         cmds.move(x_offset + width * 0.5 - 1.5, height + 1.6, depth * 0.5 - 1.8, rt, absolute=True)
-        safe_poly("polyExtrude", rt + ".f[9]", sx=0.01, sz=0.01)
+        safe_extrude(rt + ".f[9]", sx=0.01, sz=0.01)
         assign_material(rt, roof_sg)
 
     # style detail: corbelled cornice with toothed brick pattern
@@ -464,7 +474,7 @@ def create_neogrec_building(x_offset):
                 cmds.parent(rt, grp)
                 cmds.move(x_offset + wx, y, depth * 0.5 + 0.02, rt, absolute=True)
                 assign_material(rt, roof_sg)
-                safe_poly("polyExtrude", rt + ".f[1]", ltz=-0.08)
+                safe_extrude(rt + ".f[1]", ltz=-0.08)
 
             # style detail: incised geometric lintel decoration
             lintel = safe_poly("polyCube", n="b04_lintel_{0}_{1}".format(ri + 1, wi + 1), w=w + 0.35, h=0.26, d=0.18)
@@ -473,7 +483,7 @@ def create_neogrec_building(x_offset):
                 cmds.parent(lt, grp)
                 cmds.move(x_offset + wx, y + 1.05, depth * 0.5 + 0.18, lt, absolute=True)
                 assign_material(lt, trim_sg)
-                safe_poly("polyExtrude", lt + ".f[1]", ltz=-0.05)
+                safe_extrude(lt + ".f[1]", ltz=-0.05)
 
     # style detail: paneled spandrels with inset bevel
     for ri in range(3):
@@ -537,7 +547,7 @@ def create_queenanne_building(x_offset):
         cmds.parent(pt, grp)
         cmds.rotate(0, 45, 0, pt, absolute=True)
         cmds.move(x_offset + width * 0.5 - 2.0, 13.0, depth * 0.5 - 2.2, pt, absolute=True)
-        safe_poly("polyExtrude", pt + ".f[5]", sx=0.01, sz=0.01)
+        safe_extrude(pt + ".f[5]", sx=0.01, sz=0.01)
         assign_material(pt, roof_sg)
     finial = safe_poly("polyCylinder", n="b05_finial", r=0.08, h=0.8, sx=8)
     if finial:
