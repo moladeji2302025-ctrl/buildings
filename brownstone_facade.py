@@ -2,21 +2,25 @@
 
 try:
     import maya.cmds as cmds
-except Exception as exc:  # pragma: no cover - Maya runtime only
+except (ImportError, ModuleNotFoundError) as exc:  # pragma: no cover - Maya runtime only
     raise ImportError("This script must run inside Autodesk Maya.") from exc
+
+
+RUSTICATED_BLOCK_WIDTHS = [2.2, 1.9, 2.4, 1.8, 2.3, 1.9, 2.1, 1.7]
 
 
 def create_shader(name, shader_type, color, transparency=None, reflectivity=None):
     """Create a shader + shading group and return the shading group."""
-    shader = name
     sg = name + "SG"
-    if not cmds.objExists(shader):
-        shader = cmds.shadingNode(shader_type, asShader=True, name=shader)
+    if not cmds.objExists(name):
+        shader = cmds.shadingNode(shader_type, asShader=True, name=name)
         cmds.setAttr(shader + ".color", color[0], color[1], color[2], type="double3")
         if transparency is not None:
             cmds.setAttr(shader + ".transparency", transparency[0], transparency[1], transparency[2], type="double3")
         if reflectivity is not None and cmds.attributeQuery("reflectivity", node=shader, exists=True):
             cmds.setAttr(shader + ".reflectivity", reflectivity)
+    else:
+        shader = name
     if not cmds.objExists(sg):
         sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=sg)
         cmds.connectAttr(shader + ".outColor", sg + ".surfaceShader", force=True)
@@ -80,6 +84,7 @@ def create_window_assembly(
     groups,
     stone_sg,
     glass_sg,
+    dark_sg,
     hood=False,
     sill=True,
     architrave=False,
@@ -213,7 +218,7 @@ def create_window_assembly(
             center_y + (height * 0.5) + 0.28,
             wall_front_z + 0.125,
             parent=groups["grp_windows"],
-            shader=SHADERS["dark"],
+            shader=dark_sg,
         )
 
     if sill:
@@ -230,7 +235,7 @@ def create_window_assembly(
         )
 
 
-def create_floor_windows(groups, stone_sg, glass_sg):
+def create_floor_windows(groups, stone_sg, glass_sg, dark_sg):
     """Create all window layouts for garden, parlor, floor 2, and floor 3."""
     # Garden / below-grade level
     create_window_assembly(
@@ -244,6 +249,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
         groups=groups,
         stone_sg=stone_sg,
         glass_sg=glass_sg,
+        dark_sg=dark_sg,
         hood=False,
         sill=True,
         architrave=False,
@@ -259,6 +265,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
         groups=groups,
         stone_sg=stone_sg,
         glass_sg=glass_sg,
+        dark_sg=dark_sg,
         hood=False,
         sill=True,
         architrave=False,
@@ -274,6 +281,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
         groups=groups,
         stone_sg=stone_sg,
         glass_sg=glass_sg,
+        dark_sg=dark_sg,
         hood=False,
         sill=True,
         architrave=False,
@@ -281,9 +289,9 @@ def create_floor_windows(groups, stone_sg, glass_sg):
 
     # Parlor + upper floors
     floor_specs = [
-        ("floor1", 8.2, 6.5, 3.5, 6.5, True),
-        ("floor2", 20.8, 6.0, 3.5, 6.0, True),
-        ("floor3", 33.2, 6.0, 3.5, 6.0, True),
+        ("parlor", 8.2, 6.5, 3.5, 6.5, True),
+        ("second_floor", 20.8, 6.0, 3.5, 6.0, True),
+        ("third_floor", 33.2, 6.0, 3.5, 6.0, True),
     ]
     for floor_name, y, side_h, side_w, bay_h, with_architrave in floor_specs:
         create_window_assembly(
@@ -297,6 +305,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
             groups=groups,
             stone_sg=stone_sg,
             glass_sg=glass_sg,
+            dark_sg=dark_sg,
             hood=True,
             sill=True,
             architrave=with_architrave,
@@ -312,6 +321,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
             groups=groups,
             stone_sg=stone_sg,
             glass_sg=glass_sg,
+            dark_sg=dark_sg,
             hood=True,
             sill=True,
             architrave=with_architrave,
@@ -341,6 +351,7 @@ def create_floor_windows(groups, stone_sg, glass_sg):
                 groups=groups,
                 stone_sg=stone_sg,
                 glass_sg=glass_sg,
+                dark_sg=dark_sg,
                 hood=True,
                 sill=True,
                 architrave=with_architrave,
@@ -349,12 +360,12 @@ def create_floor_windows(groups, stone_sg, glass_sg):
 
 def create_rustication_and_joints(groups, stone_sg):
     """Create rusticated base and ashlar joint lines via explicit geometry."""
-    course_heights = [0.5, 0.5, 0.5]
+    course_heights = [0.5] * 3
     y_cursor = 0.25
     for course_idx, course_height in enumerate(course_heights, start=1):
         x_cursor = -9.6
-        block_widths = [2.2, 1.9, 2.4, 1.8, 2.3, 1.9, 2.1, 1.7]
-        for block_idx, bw in enumerate(block_widths, start=1):
+        # Irregular ashlar-style course rhythm for rusticated base blocks.
+        for block_idx, bw in enumerate(RUSTICATED_BLOCK_WIDTHS, start=1):
             if x_cursor + bw > 10.0:
                 break
             create_box(
@@ -419,10 +430,8 @@ def create_belt_courses(groups, stone_sg):
         )
 
 
-def create_cornice(groups):
+def create_cornice(groups, dark_sg):
     """Create multi-layer cornice with dentils, fascia, brackets, and crown cap that follows bay plan."""
-    dark_sg = SHADERS["dark"]
-
     def cornice_segment(prefix, width, depth, x, y, z, ry=0.0):
         return create_box(prefix, width, 0.333, depth, x, y, z, parent=groups["grp_cornice"], shader=dark_sg, ry=ry)
 
@@ -439,26 +448,27 @@ def create_cornice(groups):
 
     # Dentil row (30 total)
     dentil_count = 0
-    for start_x, count, spacing, z, ry in (
-        (-9.4, 8, 0.65, 0.23, 0.0),
-        (-6.2, 3, 0.6, 1.42, 30.0),
-        (-4.3, 8, 1.25, 2.72, 0.0),
-        (5.0, 3, 0.6, 1.42, -30.0),
-        (6.0, 8, 0.65, 0.23, 0.0),
-    ):
-        for idx in range(count):
+    dentil_sections = [
+        {"start_x": -9.4, "count": 8, "spacing": 0.65, "z": 0.23, "ry": 0.0},
+        {"start_x": -6.2, "count": 3, "spacing": 0.6, "z": 1.42, "ry": 30.0},
+        {"start_x": -4.3, "count": 8, "spacing": 1.25, "z": 2.72, "ry": 0.0},
+        {"start_x": 5.0, "count": 3, "spacing": 0.6, "z": 1.42, "ry": -30.0},
+        {"start_x": 6.0, "count": 8, "spacing": 0.65, "z": 0.23, "ry": 0.0},
+    ]
+    for section in dentil_sections:
+        for idx in range(section["count"]):
             dentil_count += 1
             create_box(
                 "cornice_dentil_{0:02d}".format(dentil_count),
                 0.25,
                 0.333,
                 0.25,
-                start_x + idx * spacing,
+                section["start_x"] + idx * section["spacing"],
                 47.0,
-                z,
+                section["z"],
                 parent=groups["grp_cornice"],
                 shader=dark_sg,
-                ry=ry,
+                ry=section["ry"],
             )
 
     # Bed molding (ogee approximation with two stacked offsets)
@@ -501,14 +511,15 @@ def create_cornice(groups):
 
     # Brackets / modillions (approximate S-profile via two tapered blocks)
     bracket_index = 0
-    for x_start, count, spacing, z, ry in (
-        (-9.0, 7, 0.65, 0.55, 0.0),
-        (-3.9, 7, 1.3, 2.95, 0.0),
-        (6.0, 7, 0.65, 0.55, 0.0),
-    ):
-        for i in range(count):
+    bracket_sections = [
+        {"start_x": -9.0, "count": 7, "spacing": 0.65, "z": 0.55, "ry": 0.0},
+        {"start_x": -3.9, "count": 7, "spacing": 1.3, "z": 2.95, "ry": 0.0},
+        {"start_x": 6.0, "count": 7, "spacing": 0.65, "z": 0.55, "ry": 0.0},
+    ]
+    for section in bracket_sections:
+        for i in range(section["count"]):
             bracket_index += 1
-            bx = x_start + i * spacing
+            bx = section["start_x"] + i * section["spacing"]
             lower = create_box(
                 "cornice_bracket_{0:02d}_lower".format(bracket_index),
                 0.42,
@@ -516,10 +527,10 @@ def create_cornice(groups):
                 0.55,
                 bx,
                 47.55,
-                z,
+                section["z"],
                 parent=groups["grp_cornice"],
                 shader=dark_sg,
-                ry=ry,
+                ry=section["ry"],
             )
             upper = create_box(
                 "cornice_bracket_{0:02d}_upper".format(bracket_index),
@@ -528,11 +539,11 @@ def create_cornice(groups):
                 0.3,
                 bx,
                 47.95,
-                z + 0.15,
+                section["z"] + 0.15,
                 parent=groups["grp_cornice"],
                 shader=dark_sg,
                 rx=-25.0,
-                ry=ry,
+                ry=section["ry"],
             )
             bracket_group = cmds.group(em=True, name="cornice_bracket_{0:02d}".format(bracket_index))
             cmds.parent([lower, upper], bracket_group)
@@ -573,13 +584,13 @@ def create_cornice(groups):
         )
 
 
-def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg):
+def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg, dark_sg):
     """Create stoop, cheek walls, rosettes, lamp, main entry, and below-grade entrance."""
     # Stoop steps (5) with slight taper in plan
     step_height = 0.583
     step_depth = 0.917
     top_width = 10.0
-    x_offset = 2.0
+    stoop_center_x = 2.0
     for i in range(5):
         step_name = "stoop_step_{0:02d}".format(i + 1)
         step_width = top_width + ((4 - i) * 0.2)
@@ -590,7 +601,7 @@ def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg):
             step_width,
             step_height,
             step_depth,
-            x_offset,
+            stoop_center_x,
             y,
             z,
             parent=groups["grp_stoop"],
@@ -603,7 +614,7 @@ def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg):
         8.0,
         0.6,
         5.0,
-        x_offset,
+        stoop_center_x,
         3.2,
         4.1,
         parent=groups["grp_stoop"],
@@ -659,15 +670,15 @@ def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg):
     post = cmds.polyCylinder(name="stoop_newel_post_lamp_post", r=0.125, h=2.5, sx=16)[0]
     cmds.xform(post, ws=True, t=(-3.2, 4.6, 8.8), ro=(0, 0, 0))
     cmds.parent(post, groups["grp_stoop"])
-    assign_shader(post, SHADERS["dark"])
+    assign_shader(post, dark_sg)
 
     lantern = cmds.polyCylinder(name="stoop_newel_post_lamp_lantern", r=0.208, h=0.583, sx=6)[0]
     cmds.xform(lantern, ws=True, t=(-3.2, 5.15, 8.8), ro=(0, 30, 0))
     cmds.parent(lantern, groups["grp_stoop"])
-    assign_shader(lantern, SHADERS["dark"])
+    assign_shader(lantern, dark_sg)
 
     # Main entry surround and door assembly
-    door_center_x = x_offset
+    door_center_x = stoop_center_x
     door_center_y = 8.0
     door_center_z = 2.65
 
@@ -734,11 +745,11 @@ def create_stoop_and_entry(groups, stone_sg, wood_sg, glass_sg):
         assign_shader(transom_glass, glass_sg)
 
     # Wall-mounted light fixture (right of main surround)
-    create_box("entry_light_bracket_arm", 0.08, 0.08, 0.5, door_center_x + 2.7, 10.8, 2.72, parent=groups["grp_entry_door"], shader=SHADERS["dark"])
+    create_box("entry_light_bracket_arm", 0.08, 0.08, 0.5, door_center_x + 2.7, 10.8, 2.72, parent=groups["grp_entry_door"], shader=dark_sg)
     fixture = cmds.polyCylinder(name="entry_light_fixture_downlight", r=0.125, h=0.417, sx=16)[0]
     cmds.xform(fixture, ws=True, t=(door_center_x + 2.95, 10.65, 2.72), ro=(90, 0, 0))
     cmds.parent(fixture, groups["grp_entry_door"])
-    assign_shader(fixture, SHADERS["dark"])
+    assign_shader(fixture, dark_sg)
 
     # Below-grade secondary entrance and areaway
     create_box("garden_areaway_pit", 6.0, 3.5, 4.0, door_center_x, -1.75, 6.0, parent=groups["grp_site"], shader=stone_sg)
@@ -810,10 +821,8 @@ def create_facade_mass(groups, stone_sg):
 
 def main():
     """Build complete NYC brownstone facade in a fresh Maya scene."""
-    global SHADERS
-
     # Required shader palette
-    SHADERS = {
+    shaders = {
         "stone": create_shader("brownstone_sandstone", "lambert", (0.72, 0.55, 0.42)),
         "dark": create_shader("brownstone_dark_iron", "lambert", (0.08, 0.07, 0.07)),
         "wood": create_shader("brownstone_honey_wood", "lambert", (0.55, 0.35, 0.12)),
@@ -824,23 +833,24 @@ def main():
     groups = create_groups()
 
     # Structural massing and wall articulation
-    create_facade_mass(groups, SHADERS["stone"])
-    create_rustication_and_joints(groups, SHADERS["stone"])
-    create_belt_courses(groups, SHADERS["stone"])
+    create_facade_mass(groups, shaders["stone"])
+    create_rustication_and_joints(groups, shaders["stone"])
+    create_belt_courses(groups, shaders["stone"])
 
     # Windows across all floors
-    create_floor_windows(groups, SHADERS["stone"], SHADERS["glass"])
+    create_floor_windows(groups, shaders["stone"], shaders["glass"], shaders["dark"])
 
     # Cornice stack and ornaments
-    create_cornice(groups)
+    create_cornice(groups, shaders["dark"])
 
     # Entry, stoop, and basement access
-    create_stoop_and_entry(groups, SHADERS["stone"], SHADERS["wood"], SHADERS["glass"])
+    create_stoop_and_entry(groups, shaders["stone"], shaders["wood"], shaders["glass"], shaders["dark"])
 
     # Site geometry
-    create_site_elements(groups, SHADERS["stone"])
+    create_site_elements(groups, shaders["stone"])
 
     print("NYC brownstone facade generated successfully.")
 
 
-main()
+if __name__ == "__main__":
+    main()
