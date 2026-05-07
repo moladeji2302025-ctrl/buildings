@@ -385,7 +385,6 @@ def create_romanesque_building(x_offset):
         rt = roof[0]
         cmds.parent(rt, grp)
         cmds.move(x_offset + width * 0.5 - 1.5, height + 1.6, depth * 0.5 - 1.8, rt, absolute=True)
-        cmds.scale(1.0, 1.0, 1.0, rt)
         safe_poly("polyExtrude", rt + ".f[9]", sx=0.01, sz=0.01)
         assign_material(rt, roof_sg)
 
@@ -625,7 +624,6 @@ def create_environment():
     if sidewalk:
         st = sidewalk[0]
         cmds.move(40, 0, 0, st, absolute=True)
-        cmds.rotate(-90, 0, 0, st, absolute=True)
         safe_merge_vertices(st + ".vtx[*]", d=0.0001)
         side_sg = make_lambert("env_sidewalk", (0.45, 0.45, 0.45))
         assign_material(st, side_sg)
